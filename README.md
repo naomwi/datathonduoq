@@ -1,4 +1,4 @@
-# Datathon 2026 - Naomwi Team
+# Datathon 2026 - Duoq Team
 
 Dự án này chứa mã nguồn dự báo doanh thu (Revenue) và chi phí (COGS) cho cuộc thi Datathon. 
 
