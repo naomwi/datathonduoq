@@ -1,0 +1,33 @@
+=== TARGET RECONCILIATION REPORT ===
+Compare Sales Revenue vs Gross Revenue:
+Mean diff: 0.00, Max diff: 0.00
+Exactly matched days: 3833 / 3833
+
+Compare Sales Revenue vs (Gross Revenue + Shipping Fee):
+Mean diff: -732.93, Max diff: 4658.87
+Exactly matched days: 2 / 3833
+
+Compare Sales Revenue vs Gross Revenue (Excluding Cancelled):
+Mean diff: 395484.22, Max diff: 1890367.64
+Exactly matched days: 9 / 3833
+
+Compare Sales Revenue vs (Gross Rev + Shipping - Refunds on Order Date):
+Mean diff: 132478.27, Max diff: 714254.23
+Exactly matched days: 2 / 3833
+
+Compare Sales Revenue vs (Gross Rev + Shipping - Refunds on Return Date):
+Mean diff: 132478.27, Max diff: 592230.27
+Exactly matched days: 0 / 3833
+
+Samples from compare dataframe:
+        Date     Revenue   gross_rev  gross_rev_plus_ship  net_rev_ordered_date  net_rev_return_date
+0 2012-07-04  5123547.94  5123547.94           5124122.05            4953055.04           5124122.05
+1 2012-07-05  2751773.45  2751773.45           2752098.41            2694755.50           2752098.41
+2 2012-07-06  3054029.42  3054029.42           3054265.36            2858650.78           3054265.36
+3 2012-07-07  2667930.94  2667930.94           2668178.86            2533393.72           2668178.86
+4 2012-07-08  2360851.90  2360851.90           2361299.88            2225428.05           2361299.88
+5 2012-07-09  3548386.46  3548386.46           3548945.60            3383852.44           3548945.60
+6 2012-07-10  5234938.62  5234938.62           5235420.45            5123277.38           5235420.45
+7 2012-07-11  5582884.78  5582884.78           5583734.69            5409954.96           5577240.94
+8 2012-07-12  5734632.02  5734632.02           5735619.97            5641018.00           5730785.97
+9 2012-07-13  5309511.71  5309511.71           5310237.73            5254084.86           5310237.73

@@ -1,0 +1,114 @@
+dec_dim: 51
+enc_dim: 53
+hidden_dim: 128
+lr: 0.001
+num_layers: 2
+target_scaler: !!python/object:sklearn.preprocessing._data.StandardScaler
+  _sklearn_version: 1.7.2
+  copy: true
+  feature_names_in_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - &id001 !!python/name:numpy.ndarray ''
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+    - !!python/object/apply:numpy.dtype
+      args:
+      - O8
+      - false
+      - true
+      state: !!python/tuple
+      - 3
+      - '|'
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 63
+    - false
+    - - Revenue
+      - COGS
+  mean_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+    - &id002 !!python/object/apply:numpy.dtype
+      args:
+      - f8
+      - false
+      - true
+      state: !!python/tuple
+      - 3
+      - <
+      - null
+      - null
+      - null
+      - -1
+      - -1
+      - 0
+    - false
+    - !!binary |
+      eFJXNYd6UUHGRQ+0QQBOQQ==
+  n_features_in_: 2
+  n_samples_seen_: !!python/object/apply:numpy._core.multiarray.scalar
+  - !!python/object/apply:numpy.dtype
+    args:
+    - i8
+    - false
+    - true
+    state: !!python/tuple
+    - 3
+    - <
+    - null
+    - null
+    - null
+    - -1
+    - -1
+    - 0
+  - !!binary |
+    HwwAAAAAAAA=
+  scale_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+    - *id002
+    - false
+    - !!binary |
+      ioFIKee/REFCdQejQo5BQQ==
+  var_: !!python/object/apply:numpy._core.multiarray._reconstruct
+    args:
+    - *id001
+    - !!python/tuple
+      - 0
+    - !!binary |
+      Yg==
+    state: !!python/tuple
+    - 1
+    - !!python/tuple
+      - 2
+    - *id002
+    - false
+    - !!binary |
+      Z586k7/omkIIJVN6PkOTQg==
+  with_mean: true
+  with_std: true

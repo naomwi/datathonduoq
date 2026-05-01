@@ -1,0 +1,70 @@
+\section{Additional Evidence and Reproducibility}
+
+\subsection{Requirement Checklist}
+\begin{itemize}
+  \item Forecast horizon: 2023-01-01 to 2024-07-01.
+  \item Submission columns: \texttt{Date}, \texttt{Revenue}, \texttt{COGS}.
+  \item Main metrics: MAE, RMSE, and $R^2$.
+  \item Report format: NeurIPS-style LaTeX, 4 pages excluding references and appendix.
+  \item Required methodology: time-aware validation, leakage control, explainability, and reproducible source code.
+\end{itemize}
+
+\subsection{Recurring Promotion Priors}
+Training data shows recurring promotion activity by month. December and September contain full-month promotion coverage in historical data; July averages 23 active promotion days; August is high intensity but unstable. These are used as historical priors, not as future realized promotion schedules.
+
+\begin{table}[h]
+\centering
+\caption{Selected recurring promotion month priors from training data.}
+\begin{tabular}{lrrr}
+\toprule
+Month & Years with promo & Active days mean & Avg. discount max \\
+\midrule
+12 & 10 & 31.0 & 20.0 \\
+9 & 10 & 30.0 & 11.3 \\
+7 & 10 & 23.0 & 19.3 \\
+8 & 10 & 16.4 & 30.0 \\
+3 & 10 & 14.5 & 12.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Feature Policy}
+\begin{table}[h]
+\centering
+\caption{Feature availability policy.}
+\begin{tabular}{p{0.22\linewidth}p{0.68\linewidth}}
+\toprule
+Group & Policy \\
+\midrule
+Calendar & Known for the full forecast horizon. Used directly. \\
+Historical targets & Used through lag, rolling, regime, and seasonal priors available at cutoff. \\
+Promotions & Future realizations are not assumed. Only recurring historical priors are used. \\
+Operations & Orders, traffic, returns, inventory, and reviews after 2022 are not used as realized inputs. \\
+Mix features & Product, customer, source, and region mix are used only through train-derived priors. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reproducibility Notes}
+Primary scripts in the clean lineage include:
+\begin{itemize}
+  \item \texttt{run\_clean\_v10\_h1\_regime\_shape.py}
+  \item \texttt{run\_clean\_v14\_multimetric\_frontier.py}
+  \item \texttt{run\_clean\_v16\_foldlearned\_daily\_allocator.py}
+  \item \texttt{run\_clean\_v17\_period\_ratio\_head.py}
+  \item \texttt{run\_clean\_v19\_multimetric\_frontier.py}
+\end{itemize}
+Recommended checks before packaging are:
+\begin{verbatim}
+python -m py_compile run_clean_v19_multimetric_frontier.py
+python run_clean_v19_multimetric_frontier.py
+python run_multimetric_publiclike_research.py
+\end{verbatim}
+
+\subsection{External Analyst PDF}
+The file \texttt{docs/datathon\_2026\_analyst.pdf} should be converted with Microsoft MarkItDown before final polishing:
+\begin{verbatim}
+markitdown "docs\datathon_2026_analyst.pdf" ^
+  -o "docs\datathon_2026_analyst.md"
+\end{verbatim}
+Any claim from that document should be included only if it is verified against the provided datasets or existing clean logs.

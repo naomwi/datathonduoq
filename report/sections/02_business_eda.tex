@@ -1,0 +1,56 @@
+\section{Business EDA: Demand Regime and Margin Pressure}
+
+\paragraph{Insight 1: the structural break is a funnel break.}
+The most important historical shift begins around 2019. Recent 2019-2022 Revenue is much lower than pre-2019 high-regime years, but sessions increased. The loss is therefore not a simple traffic problem: conversion and order volume collapsed, while AOV rose. This suggests a demand-quality regime shift.
+
+\begin{table}[h]
+\centering
+\caption{Recent-low regime versus pre-2019 high regime. Ratios below 1 indicate decline.}
+\label{tab:funnel_bridge}
+\begin{tabular}{lrrrrr}
+\toprule
+Half & Revenue & Orders & Sessions & Conversion & AOV \\
+\midrule
+H1 & 0.596 & 0.484 & 1.318 & 0.365 & 1.235 \\
+H2 & 0.570 & 0.456 & 1.301 & 0.345 & 1.248 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Business interpretation.}
+Traffic growth without order conversion implies that acquisition volume alone is not enough. The forecast must account for lower buying intent and a higher-ticket basket rather than extrapolating from sessions or calendar patterns only.
+
+\paragraph{Insight 2: H1 is more seasonal; H2 is more unstable.}
+Historical daily-shape correlations show that H1 seasonality is more repeatable than H2. Pairwise daily-shape correlation is 0.815 in H1 and 0.708 in H2. The model therefore uses stronger shrinkage and more conservative allocation in H2, especially around August and promotion-heavy months.
+
+Exact lunar-calendar diagnostics show that Tet is a measurable but secondary seasonal effect. The first days of Tet are slightly above the local monthly baseline, while the broader pre/post-Tet window is noisier. This makes lunar calendar useful as a derived calendar feature, but not strong enough to replace the main demand-regime and margin-ratio logic.
+
+\paragraph{Insight 3: COGS is a margin-ratio problem.}
+COGS should not be treated as a passive follower of Revenue. The COGS/Revenue ratio has much higher dispersion in H2, and August is the most volatile month. This supports a separate ratio head:
+\[
+  \text{COGS}_t = \text{Revenue}_t \times \widehat{\text{COGS ratio}}_t.
+\]
+
+\begin{table}[h]
+\centering
+\caption{COGS/Revenue ratio dispersion from training history.}
+\label{tab:ratio_dispersion}
+\begin{tabular}{lrrrr}
+\toprule
+Segment & Mean & Std. dev. & P10 & P90 \\
+\midrule
+H1 & 0.826 & 0.050 & 0.782 & 0.909 \\
+H2 & 0.930 & 0.159 & 0.788 & 1.050 \\
+August & 1.083 & 0.287 & 0.785 & 1.421 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Insight 4: promotions explain margin pressure.}
+Promotion and discount variables dominate the COGS-ratio correlation table. The strongest Spearman correlations with daily COGS ratio are discount value mean (0.830), promo line share (0.814), average discount rate (0.810), promo duration (0.804), and active promo count (0.798). Since future promotions are not directly known, the model uses recurring train-derived promo priors by month and month-day.
+
+\paragraph{Secondary mix findings.}
+Product and geography mix shifts support the same story. Streetwear and Balanced segments gained share, Outdoor declined, Central region gained share, and West declined. These are useful for business explanation and sanity checks, while the final daily forecast remains governed by demand level, calendar allocation, and margin ratio.
+
+\paragraph{Operational friction findings.}
+The converted analyst document reinforces several business-facing signals that are consistent with the clean EDA logs. Organic search appears large in volume but weaker in revenue per session, pointing to a traffic-quality issue rather than a traffic-volume issue. Streetwear is both the dominant revenue category and the largest stockout-risk area. Returns are driven more by fit and expectation mismatch than delivery speed, with wrong-size returns being the most visible leakage driver. COD also creates order-quality risk because its cancellation rate is substantially higher than prepaid methods.

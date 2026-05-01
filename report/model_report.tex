@@ -1,0 +1,166 @@
+\documentclass{article}
+
+\IfFileExists{neurips_2025.sty}{
+  \usepackage[preprint]{neurips_2025}
+}{
+  \usepackage[margin=0.78in]{geometry}
+}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\setlist[itemize]{leftmargin=*,topsep=2pt,itemsep=1pt}
+\newcommand{\metric}[1]{\textbf{#1}}
+
+\title{Model Report: Leakage-Safe Revenue and COGS Forecasting Pipeline}
+
+\author{
+Datathon 2026 Round 1 Team \\
+\texttt{<GitHub repository link>}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report describes the modeling approach used to forecast daily Revenue and COGS for 2023-01-01 to 2024-07-01. The model is designed around the business diagnosis that Revenue is driven by demand seasonality and conversion regime, while COGS reflects margin pressure from month, promotion, discount, and H2 volatility. Instead of treating the task as a single black-box regression problem, the pipeline separates demand level, daily seasonal allocation, and COGS ratio. This design improves interpretability, supports leakage control, and maps each model component to a business question. The final forecast achieved a Kaggle MAE of \metric{667,139.05}.
+\end{abstract}
+
+\section{Problem Understanding}
+
+The task requires one daily forecast for \texttt{Revenue} and \texttt{COGS}. From a business perspective, these targets answer different questions:
+\begin{itemize}
+  \item \textbf{Revenue:} How much demand will the business realize each day?
+  \item \textbf{COGS:} What cost and margin pressure will accompany that demand?
+\end{itemize}
+
+This distinction drives the modeling strategy. A direct model for both targets can fit historical patterns, but it can miss the reason why errors happen. The EDA shows that Revenue declined after 2018 mainly because conversion and order volume fell, not because traffic disappeared. At the same time, COGS/Revenue ratio is highly sensitive to promotions and H2 margin regimes. Therefore, the model is structured as:
+\[
+  \widehat{\text{Revenue}} =
+  \widehat{\text{Demand level}}
+  \times
+  \widehat{\text{Daily seasonal share}},
+  \qquad
+  \widehat{\text{COGS}} =
+  \widehat{\text{Revenue}}
+  \times
+  \widehat{\text{COGS ratio}}.
+\]
+
+\section{Evidence Behind the Model Design}
+
+\begin{table}[h]
+\centering
+\caption{Business evidence translated into modeling choices.}
+\label{tab:evidence_to_model}
+\begin{tabular}{p{0.28\linewidth}p{0.32\linewidth}p{0.30\linewidth}}
+\toprule
+Finding & Business meaning & Modeling response \\
+\midrule
+Sessions increased after 2018 while orders and conversion declined & Traffic volume is not enough; demand quality changed & Model demand through regime and conversion-aware priors, not only traffic volume \\
+H1 daily shape is more stable than H2 & H1 seasonality can be trusted more than H2 & Use stronger H1 seasonal allocation and more conservative H2 shrinkage \\
+COGS/Revenue ratio has much higher H2 dispersion & Margin risk is not proportional to Revenue & Forecast COGS through a separate ratio head \\
+Promo and discount variables dominate COGS-ratio correlations & Promotions affect margin more than demand level alone & Include recurring promo and discount priors in the COGS ratio layer \\
+Streetwear dominates Revenue and stockout exposure & Core category drives both upside and operational risk & Use mix priors for sanity checks and business interpretation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Pipeline Overview}
+
+The pipeline has five stages.
+
+\paragraph{1. Data audit and target reconstruction.}
+The pipeline first verifies target definitions. Historical Revenue is reconstructed from transaction lines as \texttt{quantity * unit\_price}. Historical COGS is reconstructed from \texttt{quantity * product.cogs}. This prevents an important business mistake: discount amount is an explanatory variable, not a second subtraction from the Revenue target.
+
+\paragraph{2. Feature availability policy.}
+Features are separated into three groups:
+\begin{itemize}
+  \item \textbf{Known future features:} calendar variables such as month, day-of-week, month boundary, forecast horizon, and algorithmic lunar-calendar features derived from \texttt{Date}.
+  \item \textbf{Train-derived priors:} historical seasonality, recurring promotion intensity, historical COGS ratio, category/region/source mix priors.
+  \item \textbf{Unavailable future facts:} realized 2023--2024 orders, traffic, returns, reviews, inventory states, and hidden target values.
+\end{itemize}
+Only the first two groups are used for forecasting.
+
+\paragraph{3. Revenue demand anchor.}
+Revenue is modeled as a stable demand anchor plus daily allocation. The demand anchor captures long-term regime, recency, and calendar level. The daily allocation distributes period-level demand across days using historical month-day and day-of-week patterns.
+
+\paragraph{4. COGS ratio head.}
+COGS is not modeled as a raw copy of Revenue. The pipeline estimates COGS ratio using month, H1/H2 regime, recurring promo pressure, discount priors, and historical margin behavior. Final COGS is then generated as:
+\[
+  \widehat{\text{COGS}}_t =
+  \widehat{\text{Revenue}}_t \cdot \widehat{r}_t.
+\]
+This makes the forecast sensitive to margin compression in promotion-heavy periods.
+
+\paragraph{5. Forecast sanity checks.}
+Before submission, outputs are checked for row count, date range, missing values, negative values, extreme daily values, period totals, and COGS/Revenue ratio ranges. These checks are important because a high-scoring forecast is not useful if it violates business plausibility.
+
+\section{Validation Strategy}
+
+Random cross-validation is not appropriate for this task because the future horizon is long and the time structure is strong. The validation strategy uses time-aware folds that train on past data and forecast future periods. The main validation questions are:
+\begin{itemize}
+  \item Does the model remain stable over long-horizon folds?
+  \item Does it avoid overfitting one season or one month?
+  \item Does it reduce both level error and daily peak error?
+  \item Does COGS ratio stay within plausible business ranges?
+\end{itemize}
+
+The evaluation tracks MAE, RMSE, and $R^2$. MAE measures average miss, RMSE penalizes peak-day errors, and $R^2$ checks whether the forecast explains target variance. Because the business needs both accurate totals and reliable daily planning, the model avoids changes that reduce one metric by creating implausible peaks or ratios.
+
+\section{Model Explainability}
+
+The model is explainable by design. Each component maps to an operational interpretation:
+\begin{itemize}
+  \item \textbf{Calendar and seasonality} explain recurring demand timing, including Gregorian and lunar-calendar effects derived from the date field.
+  \item \textbf{Regime priors} explain the post-2018 demand-quality shift.
+  \item \textbf{Promotion and discount priors} explain COGS ratio and margin compression.
+  \item \textbf{Mix priors} explain category and region concentration risks.
+\end{itemize}
+
+For tree-based anchor models, feature importance and partial-dependence style checks are used as model explanations. For deterministic allocation and ratio layers, the explanation comes directly from the formula and the historical priors used.
+
+\section{Results and Business Interpretation}
+
+\begin{table}[h]
+\centering
+\caption{Final model summary.}
+\label{tab:model_summary}
+\begin{tabular}{ll}
+\toprule
+Item & Value \\
+\midrule
+Forecast horizon & 2023-01-01 to 2024-07-01 \\
+Targets & Revenue, COGS \\
+Main score reported by Kaggle & MAE = 667,139.05 \\
+Core Revenue mechanism & Demand level $\times$ daily seasonal allocation \\
+Core COGS mechanism & Revenue $\times$ learned COGS ratio \\
+Main business insight & Demand timing and margin pressure must be modeled separately \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The model result supports a practical business interpretation. Revenue planning should focus on seasonal demand and conversion quality. COGS planning should focus on margin risk during promotion-heavy H2 periods. A Revenue-only view can hide cost pressure, while a separate ratio head makes the forecast more useful for gross-margin planning.
+
+\section{Reproducibility and Compliance}
+
+All modeling features and priors are derived from the provided historical datasets and calendar structure. The submitted source code can regenerate the forecast and includes deterministic sanity checks. The pipeline does not use hidden target values or external datasets as model inputs. The repository README should list the exact entry point, random seed policy, expected input folder, output submission path, and validation command so that the result can be reproduced by the judging team.
+
+\section{Limitations}
+
+The model cannot observe actual future campaigns, realized traffic, future inventory shocks, or actual 2023--2024 order behavior. It therefore uses historical priors for unavailable future drivers. This makes the forecast reproducible and leakage-safe, but it also means the model will underreact to genuinely new business interventions after 2022.
+
+\end{document}

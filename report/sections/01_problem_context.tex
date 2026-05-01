@@ -1,0 +1,43 @@
+\section{Problem Context and Data Provenance}
+
+The task is to forecast one row per day with columns \texttt{Date}, \texttt{Revenue}, and \texttt{COGS} for the horizon 2023-01-01 to 2024-07-01. The evaluation emphasizes low \metric{MAE}, low \metric{RMSE}, and high \metric{$R^2$}, while the report rubric also rewards clear EDA, time-aware validation, feature explanation, leakage control, and reproducibility.
+
+\paragraph{Business framing.}
+The forecast is not only a statistical exercise. Revenue determines demand planning and cash-flow expectations, while COGS determines margin risk and inventory-promotion tradeoffs. We therefore model Revenue and COGS with different business mechanisms: demand level and seasonality for Revenue, margin and promotion regime for COGS.
+
+\paragraph{Target reconstruction.}
+The historical target identity is stable: Revenue is reconstructed as \texttt{quantity * unit\_price}, and COGS is reconstructed from \texttt{quantity * products.cogs}. The reconstruction audit over 3,833 training days had near-zero Revenue error and COGS error only at rounding scale.
+
+\begin{table}[h]
+\centering
+\caption{Target reconstruction audit on training data.}
+\label{tab:target_identity}
+\begin{tabular}{lrr}
+\toprule
+Target & Max absolute error & Mean absolute error \\
+\midrule
+Revenue & $1.86 \times 10^{-9}$ & $2.33 \times 10^{-11}$ \\
+COGS & $0.0050$ & $0.0025$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Feature availability.}
+All modeling features and priors are derived from the provided historical datasets and calendar structure. The forecasting pipeline is reproducible from the submitted source code and does not use hidden target values or external datasets as model inputs. Operational source tables end at or before 2022-12-31, so future operational variables are only used through historical priors, not as future realized values.
+
+\begin{table}[h]
+\centering
+\caption{Selected source coverage used for leakage-safe feature policy.}
+\label{tab:source_coverage}
+\begin{tabular}{lrrl}
+\toprule
+File & Rows & Date coverage & Role in model \\
+\midrule
+\texttt{sales.csv} & 3,833 & 2012-07-04 to 2022-12-31 & target history \\
+\texttt{orders.csv} & 646,945 & 2012-07-04 to 2022-12-31 & funnel history \\
+\texttt{web\_traffic.csv} & 3,652 & 2013-01-01 to 2022-12-31 & traffic priors \\
+\texttt{promotions.csv} & 50 & 2013-01-31 to 2022-12-31 & recurring promo priors \\
+\texttt{inventory.csv} & 60,247 & 2012-07-31 to 2022-12-31 & stockout priors \\
+\bottomrule
+\end{tabular}
+\end{table}

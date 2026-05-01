@@ -1,0 +1,54 @@
+\documentclass{article}
+
+\IfFileExists{neurips_2025.sty}{
+  \usepackage[preprint]{neurips_2025}
+}{
+  \usepackage[margin=0.78in]{geometry}
+}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\setlist[itemize]{leftmargin=*,topsep=2pt,itemsep=1pt}
+\setlist[enumerate]{leftmargin=*,topsep=2pt,itemsep=1pt}
+\newcommand{\metric}[1]{\textbf{#1}}
+
+\title{Revenue Follows Seasonal Demand; COGS Reflects Margin and Promotion Regime}
+
+\author{
+Datathon 2026 Round 1 Team \\
+\texttt{<GitHub repository link>}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We forecast daily Revenue and COGS for an e-commerce business from 2023-01-01 to 2024-07-01 using only the provided historical datasets and calendar structure. The central business finding is that Revenue is primarily governed by demand seasonality and regime-level conversion, while COGS is better explained through a margin-ratio mechanism driven by month, discount pressure, and historical H2 instability. Our final forecasting pipeline combines a stable demand anchor with a separate COGS ratio head and a conservative train-derived daily allocation layer. The final forecast achieved a Kaggle MAE of \metric{667,139.05}.
+\end{abstract}
+
+\input{sections/01_problem_context}
+\input{sections/02_business_eda}
+\input{sections/03_forecasting_method}
+\input{sections/04_results_recommendations}
+
+\clearpage
+\appendix
+\input{appendix}
+
+\end{document}

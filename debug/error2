@@ -1,0 +1,100 @@
+# Revised Breakthrough Strategy — Post-Correction
+
+> [!CAUTION]
+> The previous version of this plan made a critical error: it compared predictions against [sample_submission.csv](file:///c:/Users/admin/Documents/Project/datathon/dataset/sample_submission.csv) as ground truth and diagnosed a +682k systematic bias. **The user's OOF audit disproved this.** This revision is based on the corrected OOF evidence only.
+
+## Corrected Diagnosis (from user's OOF audit)
+
+| Metric | Full OOF (3 folds) | Fold 2022 only |
+|--------|------------------:|---------------:|
+| Mean bias | **+48,668** | **−248,411** |
+| Median bias | +59,091 | −224,591 |
+| Overpredict share | 53.6% | 38.1% |
+| Revenue MAE | 724,405 | 662,317 |
+| COGS MAE | 593,308 | 575,714 |
+
+**Implication:** The model is roughly unbiased overall. On the fold closest to test (2022), it actually **underpredicts**. A blanket shrink factor (0.80–0.90) would make things worse, not better.
+
+## What Remains Valid
+
+1. **Regime drift** is real. Peak Revenue years (2014–2018, ~5.5M/day) inflate fold 2020 errors.
+2. **EOM spikes** are a genuine structural weak spot (confirmed by both OOF and the router's feature importance where `year` dominates).
+3. **March** is the hardest month.
+4. The gap between offline MAE (~674k anchor) and public MAE (~902k) is large (~228k) and **unexplained** by simple bias.
+
+## The Real Question: Where Does the 228k Offline→Public Gap Come From?
+
+Since bias is small on OOF, the gap is likely from:
+
+1. **Test distribution shift** that fold 2020–2022 doesn't fully capture (e.g. COGS/Revenue ratio regime, new seasonality)
+2. **Recursive error accumulation** over 548 days — OOF folds are 365 days, but test is 548 days where later months may compound errors
+3. **EOM spike miscalibration** in the test period specifically
+4. **COGS contribution** to the public metric (still ambiguous whether MAE is Revenue-only or Revenue+COGS)
+
+## Revised Attack Vectors for 200k+ Improvement
+
+### Vector A: EOM Spike Specialist Model (High Confidence)
+
+EOM days (days_to_eom ≤ 2) have ~1.1–1.2M MAE vs ~780k for normal days. There are 54 such days in ~548 test days = ~10% of data but ~15% of error budget.
+
+**Approach:** Train a separate CatBoost model specifically for days_to_eom ≤ 2, using EOM-specific features (month-end accumulation patterns, days_to_eom interactions). Blend with the main model only on those days.
+
+**Expected gain:** If EOM MAE drops from ~1.1M to ~800k, that's ~300k × 54/548 ≈ **30k overall MAE reduction**.
+
+### Vector B: Recursive Horizon Decay Fix (Medium-High Confidence)
+
+The recursive forecast over 548 days likely degrades in the later portion. Error compounds because lagged features become increasingly synthetic.
+
+**Approach:**
+1. **Direct multi-step forecasting** for longer horizons (e.g., direct 7-day, 14-day, 28-day models).
+2. Or **periodic re-anchoring**: at each month boundary, anchor lag features to monthly seasonal priors rather than pure recursive values.
+3. Test a **shorter recursive window + seasonal fallback** hybrid.
+
+**Expected gain:** Hard to quantify without experiment, but this addresses the structural gap between 365-day OOF and 548-day test. If it closes half the 228k gap: **~100k reduction**.
+
+### Vector C: COGS Metric Probe (Quick, Diagnostic)
+
+The 902k public MAE could include a large COGS penalty. Current COGS MAE is 593k on OOF.
+
+**Approach:** Submit one probe with Revenue from the current best but COGS set to a trivial estimator (e.g., `COGS = Revenue × 0.81` median ratio). If public MAE changes dramatically, the COGS channel is where the gain is.
+
+**Expected gain:** Diagnostic — establishes whether the "200k jump" should focus on COGS, Revenue, or both.
+
+### Vector D: Train Window + Sample Weighting (Medium Confidence)
+
+Rather than simple shrink, use **sample weighting** that down-weights 2012–2018 data and up-weights 2019–2022.
+
+**Approach:** Exponential decay weights (`w = exp(−λ × years_ago)`) in CatBoost training. OOF should show whether fold 2020 improves without hurting fold 2022.
+
+**Expected gain:** Modest on net OOF, but may reduce the specific regime-driven errors that transfer to public. **~30–80k reduction** plausible.
+
+### Vector E: Ensemble Diversity Beyond Current Blend (Medium Confidence)
+
+Current best is 70% CatBoost + 30% LightGBM. Adding a structurally different donor could help.
+
+**Approach:** Train a **linear model** (Ridge/ElasticNet) on the same feature set. It handles trend/bias differently from tree models. Blend at 10–20% weight as a bias corrector.
+
+**Expected gain:** ~20–50k based on competition evidence (linear models often improve tree ensembles by 2–5%).
+
+## Priority Order
+
+| # | Vector | Confidence | Effort | Expected MAE Impact |
+|---|--------|-----------|--------|---------------------|
+| 1 | **C: COGS probe** | High | 5 min | Diagnostic |
+| 2 | **B: Recursive horizon fix** | Medium-High | 2–3 hr | ~100k |
+| 3 | **D: Sample weighting** | Medium | 30 min | ~30–80k |
+| 4 | **A: EOM specialist** | High | 1 hr | ~30k |
+| 5 | **E: Linear blend** | Medium | 1 hr | ~20–50k |
+
+> [!IMPORTANT]
+> No single vector will deliver 200k. The target requires **stacking multiple orthogonal improvements**. The most promising combination is B + D + E ≈ 150–230k if they don't overlap.
+
+## What Was Wrong In The Previous Plan
+
+| Previous Claim | Reality |
+|---------------|---------|
+| +682k mean bias, 91% overpredict | OOF shows +48k, 53.6% |
+| Fold 2022 overpredicts | Fold 2022 **underpredicts** by −248k |
+| Shrink 0.80–0.90 is quick win | Best OOF scale is ~0.96 overall, **1.05** on fold 2022 |
+| November worst month | August is worst in OOF |
+| Comparing to [sample_submission.csv](file:///c:/Users/admin/Documents/Project/datathon/dataset/sample_submission.csv) as truth | This file contains placeholder/true values that cannot be used for offline diagnosis |

@@ -1,0 +1,9 @@
+logs/
+__pycache__/
+.venv/
+.pytest_cache/
+dataset/submission*.csv
+dataset/feature_store*.csv
+.claude/
+.cursor/
+replicate/final_submission_667k.csv
